@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Content Optimizer - Money Making Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-r from-purple-50 to-pink-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-purple-600 mb-2">Social Media Content Optimizer</h1>
+            <p class="text-gray-600">Maximize your social media earnings with AI-powered content analysis</p>
+        </div>
+        
+        <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="col-span-1">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="platform">
+                        <i class="fas fa-share-alt mr-2"></i>Platform
+                    </label>
+                    <select id="platform" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-purple-300">
+                        <option value="instagram">Instagram</option>
+                        <option value="twitter">Twitter</option>
+                        <option value="tiktok">TikTok</option>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="content">
+                            <i class="fas fa-pen-fancy mr-2"></i>Your Content
+                        </label>
+                        <span id="charCount" class="text-sm text-gray-500">0/500</span>
+                    </div>
+                    <textarea id="content" rows="4" 
+                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-purple-300 focus:border-purple-300"
+                        placeholder="Enter your social media content here..."></textarea>
+                </div>
+            </div>
+            
+            <button onclick="analyzeContent()" 
+                class="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-lg hover:from-purple-600 hover:to-pink-600 transition duration-300">
+                <i class="fas fa-magic mr-2"></i>Analyze & Optimize Content
+            </button>
+            
+            <div id="results" class="mt-8 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Content Score -->
+                    <div class="bg-purple-50 rounded-lg p-4">
+                        <h3 class="font-bold text-purple-600 mb-3">
+                            <i class="fas fa-chart-line mr-2"></i>Content Score
+                        </h3>
+                        <div class="flex items-center">
+                            <div class="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
+                                <span id="content-score" class="text-2xl font-bold text-purple-600">0</span>
+                            </div>
+                            <div class="ml-4">
+                                <div id="viral-potential" class="text-sm text-gray-600"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Monetization Potential -->
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h3 class="font-bold text-green-600 mb-3">
+                            <i class="fas fa-dollar-sign mr-2"></i>Estimated Earnings
+                        </h3>
+                        <div class="flex items-center">
+                            <div class="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                                <span id="earnings" class="text-2xl font-bold text-green-600">$0</span>
+                            </div>
+                            <div class="ml-4">
+                                <div id="engagement" class="text-sm text-gray-600"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hashtag Suggestions -->
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h3 class="font-bold text-blue-600 mb-3">
+                            <i class="fas fa-hashtag mr-2"></i>Recommended Hashtags
+                        </h3>
+                        <div id="hashtag-suggestions" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <!-- Best Posting Times -->
+                    <div class="bg-yellow-50 rounded-lg p-4">
+                        <h3 class="font-bold text-yellow-600 mb-3">
+                            <i class="fas fa-clock mr-2"></i>Best Posting Times
+                        </h3>
+                        <div id="posting-times" class="flex flex-wrap gap-2"></div>
+                    </div>
+
+                    <!-- Improvements -->
+                    <div class="col-span-1 md:col-span-2 bg-pink-50 rounded-lg p-4">
+                        <h3 class="font-bold text-pink-600 mb-3">
+                            <i class="fas fa-lightbulb mr-2"></i>Suggested Improvements
+                        </h3>
+                        <ul id="improvements" class="list-disc list-inside space-y-2 text-gray-700"></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Character counter
+        document.getElementById('content').addEventListener('input', function(e) {
+            const count = e.target.value.length;
+            document.getElementById('charCount').textContent = `${count}/500`;
+        });
+
+        async function analyzeContent() {
+            const content = document.getElementById('content').value;
+            const platform = document.getElementById('platform').value;
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content, platform }),
+                });
+                
+                const data = await response.json();
+                
+                // Show results
+                document.getElementById('results').classList.remove('hidden');
+                
+                // Update content score and viral potential
+                document.getElementById('content-score').textContent = data.content_score;
+                document.getElementById('viral-potential').textContent = `Viral Potential: ${data.viral_potential}%`;
+                
+                // Update earnings and engagement
+                document.getElementById('earnings').textContent = `$${data.monetization_potential}`;
+                document.getElementById('engagement').textContent = `Engagement Score: ${data.engagement_prediction}/10`;
+                
+                // Update hashtag suggestions
+                const hashtagsContainer = document.getElementById('hashtag-suggestions');
+                hashtagsContainer.innerHTML = data.hashtag_suggestions
+                    .map(tag => `<span class="bg-blue-100 text-blue-600 px-2 py-1 rounded">${tag}</span>`)
+                    .join('');
+                
+                // Update posting times
+                const timesContainer = document.getElementById('posting-times');
+                timesContainer.innerHTML = data.best_posting_times
+                    .map(time => `<span class="bg-yellow-100 text-yellow-600 px-2 py-1 rounded">${time}</span>`)
+                    .join('');
+                
+                // Update improvements
+                const improvementsContainer = document.getElementById('improvements');
+                improvementsContainer.innerHTML = data.improvements
+                    .map(improvement => `<li class="text-gray-700">${improvement}</li>`)
+                    .join('');
+                
+            } catch (error) {
+                alert('Error analyzing content. Please try again.');
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>
