@@ -121,47 +121,169 @@
             analyzeContent();
         });
         
-        async function analyzeContent() {
+        // Platform-specific hashtags
+        const TRENDING_HASHTAGS = {
+            'instagram': ['#reels', '#trending', '#viral', '#instagram', '#follow'],
+            'twitter': ['#trending', '#viral', '#follow', '#news', '#today'],
+            'tiktok': ['#fyp', '#viral', '#trending', '#foryou', '#tiktok']
+        };
+
+        // Best posting times by platform
+        const POSTING_TIMES = {
+            'instagram': ['8:00', '12:00', '17:00', '21:00'],
+            'twitter': ['9:00', '12:00', '15:00', '18:00'],
+            'tiktok': ['11:00', '15:00', '19:00', '22:00']
+        };
+
+        function analyzeContentQuality(content) {
+            let score = 0;
+            
+            // Length analysis
+            const length = content.length;
+            if (50 <= length && length <= 300) score += 25;
+            else if (300 < length && length <= 500) score += 15;
+            
+            // Emoji presence
+            const emojiCount = (content.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
+            score += Math.min(emojiCount * 2, 10);
+            
+            // URL presence
+            if (content.includes('http') || content.includes('www.')) score += 15;
+            
+            // Hashtag quality
+            const hashtags = (content.match(/#\w+/g) || []);
+            score += Math.min(hashtags.length * 5, 20);
+            
+            // Call to action presence
+            const ctaPhrases = ['check out', 'visit', 'buy', 'follow', 'like', 'share', 'comment'];
+            if (ctaPhrases.some(phrase => content.toLowerCase().includes(phrase))) score += 15;
+            
+            return Math.min(score, 100);
+        }
+
+        function calculateEngagement(contentScore) {
+            return (contentScore / 10).toFixed(1);
+        }
+
+        function estimateMonetization(content, engagementScore) {
+            const baseRate = 0.05;
+            let multiplier = 1.0;
+            
+            // Commercial intent
+            const commercialKeywords = ['buy', 'sale', 'discount', 'offer', 'deal', 'limited', 'exclusive'];
+            if (commercialKeywords.some(keyword => content.toLowerCase().includes(keyword))) {
+                multiplier *= 1.5;
+            }
+            
+            // Links present
+            if (content.includes('http') || content.includes('www.')) {
+                multiplier *= 1.3;
+            }
+            
+            const potentialReach = 1000 * (engagementScore);
+            return (baseRate * potentialReach * multiplier).toFixed(2);
+        }
+
+        function calculateViralPotential(content, platform) {
+            let score = 0;
+            
+            // Viral indicators
+            const viralKeywords = ['trending', 'viral', 'challenge', 'breaking', 'exclusive'];
+            score += viralKeywords.filter(keyword => content.toLowerCase().includes(keyword)).length * 5;
+            
+            // Platform-specific factors
+            if (platform === 'tiktok' && 
+                ['duet', 'challenge'].some(word => content.toLowerCase().includes(word))) {
+                score += 20;
+            } else if (platform === 'twitter' && 
+                      content.includes('#') && content.length < 200) {
+                score += 15;
+            } else if (platform === 'instagram' && 
+                      content.toLowerCase().includes('#reels')) {
+                score += 15;
+            }
+            
+            return Math.min(score + 50, 100); // Base 50 for optimism
+        }
+
+        function generateImprovements(content, platform) {
+            const improvements = [];
+            
+            // Length improvements
+            const length = content.length;
+            if (length < 50) {
+                improvements.push("Add more detail to increase engagement");
+            } else if (length > 500) {
+                improvements.push("Content might be too long - consider breaking into multiple posts");
+            }
+            
+            // Hashtag improvements
+            const hashtags = (content.match(/#\w+/g) || []);
+            if (hashtags.length === 0) {
+                improvements.push("Add relevant hashtags for better visibility");
+            } else if (hashtags.length < 3) {
+                improvements.push("Add more trending hashtags to increase reach");
+            }
+            
+            // Platform-specific improvements
+            if (platform === 'instagram') {
+                const emojiCount = (content.match(/[\u{1F300}-\u{1F9FF}]/gu) || []).length;
+                if (emojiCount < 2) {
+                    improvements.push("Add more emojis for better engagement");
+                }
+            } else if (platform === 'twitter') {
+                if (length > 280) {
+                    improvements.push("Shorten content to fit Twitter's character limit");
+                }
+            } else if (platform === 'tiktok') {
+                if (!content.toLowerCase().includes('trend') && 
+                    !content.toLowerCase().includes('challenge') && 
+                    !content.toLowerCase().includes('duet')) {
+                    improvements.push("Reference current trends or challenges for better visibility");
+                }
+            }
+            
+            return improvements;
+        }
+
+        function analyzeContent() {
             const content = document.getElementById('content').value;
             const platform = document.getElementById('platform').value;
             
             try {
-                const response = await fetch('api/analyze', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ content, platform }),
-                });
-                
-                const data = await response.json();
+                // Calculate metrics
+                const contentScore = analyzeContentQuality(content);
+                const engagementScore = calculateEngagement(contentScore);
+                const monetizationPotential = estimateMonetization(content, engagementScore);
+                const viralPotential = calculateViralPotential(content, platform);
+                const improvements = generateImprovements(content, platform);
                 
                 // Show results
                 document.getElementById('results').classList.remove('hidden');
                 
                 // Update content score and viral potential
-                document.getElementById('content-score').textContent = data.content_score;
-                document.getElementById('viral-potential').textContent = `Viral Potential: ${data.viral_potential}%`;
+                document.getElementById('content-score').textContent = contentScore;
+                document.getElementById('viral-potential').textContent = `Viral Potential: ${viralPotential}%`;
                 
                 // Update earnings and engagement
-                document.getElementById('earnings').textContent = `$${data.monetization_potential}`;
-                document.getElementById('engagement').textContent = `Engagement Score: ${data.engagement_prediction}/10`;
+                document.getElementById('earnings').textContent = `$${monetizationPotential}`;
+                document.getElementById('engagement').textContent = `Engagement Score: ${engagementScore}/10`;
                 
                 // Update hashtag suggestions
                 const hashtagsContainer = document.getElementById('hashtag-suggestions');
-                hashtagsContainer.innerHTML = data.hashtag_suggestions
+                hashtagsContainer.innerHTML = TRENDING_HASHTAGS[platform]
                     .map(tag => `<span class="bg-blue-100 text-blue-600 px-2 py-1 rounded">${tag}</span>`)
                     .join('');
                 
                 // Update posting times
                 const timesContainer = document.getElementById('posting-times');
-                timesContainer.innerHTML = data.best_posting_times
+                timesContainer.innerHTML = POSTING_TIMES[platform]
                     .map(time => `<span class="bg-yellow-100 text-yellow-600 px-2 py-1 rounded">${time}</span>`)
                     .join('');
                 
                 // Update improvements
                 const improvementsContainer = document.getElementById('improvements');
-                improvementsContainer.innerHTML = data.improvements
+                improvementsContainer.innerHTML = improvements
                     .map(improvement => `<li class="text-gray-700">${improvement}</li>`)
                     .join('');
                 
